@@ -2,11 +2,18 @@ package ru.rsreu.operation;
 
 import java.util.function.Function;
 
-public class IntegralSinMultX {
+public class IntegralSinMultX implements Runnable {
     private double accuracy;
+    private static final int STEP_INFO = 50;
 
     public IntegralSinMultX(double accuracy) {
         this.accuracy = accuracy;
+        // accuracy = 1e-14 == 2 sec
+    }
+
+    @Override
+    public void run() {
+        System.out.println(calculateIntegral());
     }
 
     public double calculateIntegral() {
@@ -30,10 +37,27 @@ public class IntegralSinMultX {
     private double calculateIntegral(double a, double b, Function<Double, Double> f) {
         double n = 1;
 
-        double integralPrev;
+        double integralPrev = 0;
         double integral = 0;
 
+        int hx = 1;
+        double h0Accuracy = Math.pow(accuracy, 1.0 / STEP_INFO);
+        double hAccuracy = h0Accuracy;
+
+        int percent = 100 / STEP_INFO;
+
+        System.out.println("0%");
+
         do {
+            if (hAccuracy > Math.abs(integral - integralPrev)) {
+                while (hAccuracy * h0Accuracy > Math.abs(integral - integralPrev) && hx != 1) {
+                    hAccuracy *= h0Accuracy;
+                    hx++;
+                }
+                System.out.println(hx * percent + "%");
+                hAccuracy *= h0Accuracy;
+                hx++;
+            }
             integralPrev = integral;
 
             double h = (b - a) / n;
@@ -49,7 +73,8 @@ public class IntegralSinMultX {
             n *= 2;
         } while (Math.abs(integral - integralPrev) > accuracy);
 
+        System.out.println("100%");
+
         return integral;
     }
-
 }

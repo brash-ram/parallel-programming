@@ -15,13 +15,13 @@ public class IntegralTests {
         assertTrue(sec > 1 && sec < 10);
     }
 
-//    @Test()
-//    public void timeLongTest() {
-//        IntegralSinMultX integral = new IntegralSinMultX(0.000000000000008);
-//        double sec = integral.getExecutionTimeSec();
-//        System.out.println(sec);
-//        assertTrue(sec > 1 && sec < 10);
-//    }
+    @Test()
+    public void timeLongTest() {
+        IntegralSinMultX integral = new IntegralSinMultX(0.000000000000007106);
+        double sec = integral.getExecutionTimeSec();
+        System.out.println(sec);
+        assertTrue(sec > 1 && sec < 10);
+    }
 
 
     @RepeatedTest(10)
