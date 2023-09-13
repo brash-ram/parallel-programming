@@ -23,6 +23,22 @@ public class IntegralTests {
 //        assertTrue(sec > 1);
 //    }
 
+    @Test
+    public void valueTest() {
+        IntegralSinMultX integral = new IntegralSinMultX(1e-14);
+        double value = integral.calculateIntegral();
+        double expected = 0.30116867893976085;
+        assertEquals(expected, value);
+    }
+
+    @RepeatedTest(10)
+    public void valueRepeatedTest() {
+        IntegralSinMultX integral = new IntegralSinMultX(1e-14);
+        double value = integral.calculateIntegral();
+        double expected = 0.30116867893976085;
+        assertEquals(expected, value);
+    }
+
 
     @RepeatedTest(10)
     public void timeRepeatedTest() {
