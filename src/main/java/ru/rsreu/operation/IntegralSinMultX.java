@@ -4,7 +4,7 @@ import java.util.function.Function;
 
 public class IntegralSinMultX implements Runnable {
     private double accuracy;
-    private static final int STEP_INFO = 50;
+    private static final int STEP_INFO = 20;
 
     public IntegralSinMultX(double accuracy) {
         this.accuracy = accuracy;
