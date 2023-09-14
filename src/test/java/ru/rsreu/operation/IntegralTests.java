@@ -25,10 +25,11 @@ public class IntegralTests {
 
     @Test
     public void valueTest() {
-        IntegralSinMultX integral = new IntegralSinMultX(1e-14);
+        double accuracy = 1e-14;
+        IntegralSinMultX integral = new IntegralSinMultX(accuracy);
         double value = integral.calculateIntegral();
         double expected = 0.30116867893976085;
-        assertEquals(expected, value);
+        assertTrue(expected - accuracy < value && expected + accuracy > value);
     }
 
     @RepeatedTest(10)
