@@ -13,10 +13,15 @@ public class IntegralSinMultX implements Runnable {
 
     @Override
     public void run() {
-        System.out.println(calculateIntegral());
+        try {
+            System.out.println("Значение интеграла = " + calculateIntegral());
+        } catch (Exception ex) {
+            System.out.println("Вычисление интеграла прервано");
+        }
+
     }
 
-    public double calculateIntegral() {
+    public double calculateIntegral() throws Exception {
         double a = 0;
         double b = 1;
 
@@ -25,7 +30,11 @@ public class IntegralSinMultX implements Runnable {
 
     public long getExecutionTimeMillis() {
         long start = System.currentTimeMillis();
-        calculateIntegral();
+        try {
+            calculateIntegral();
+        } catch (Exception ex) {
+            System.out.println("Вычисление интеграла прервано");
+        }
         return System.currentTimeMillis() - start;
     }
 
@@ -34,7 +43,7 @@ public class IntegralSinMultX implements Runnable {
         return millis / 1000.0;
     }
 
-    private double calculateIntegral(double a, double b, Function<Double, Double> f) {
+    private double calculateIntegral(double a, double b, Function<Double, Double> f) throws Exception {
         double n = 1;
 
         double integralPrev = 0;
@@ -49,6 +58,9 @@ public class IntegralSinMultX implements Runnable {
         System.out.println("0%");
 
         do {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new Exception();
+            }
             if (hAccuracy > Math.abs(integral - integralPrev)) {
                 while (hAccuracy * h0Accuracy > Math.abs(integral - integralPrev) && hx != 1) {
                     hAccuracy *= h0Accuracy;

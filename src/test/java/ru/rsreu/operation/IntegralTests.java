@@ -24,7 +24,7 @@ public class IntegralTests {
     }
 
     @Test
-    public void valueTest() {
+    public void valueTest() throws Exception {
         double accuracy = 1e-14;
         IntegralSinMultX integral = new IntegralSinMultX(accuracy);
         double value = integral.calculateIntegral();
@@ -33,7 +33,7 @@ public class IntegralTests {
     }
 
     @RepeatedTest(10)
-    public void valueRepeatedTest() {
+    public void valueRepeatedTest() throws Exception {
         double accuracy = 1e-14;
         IntegralSinMultX integral = new IntegralSinMultX(accuracy);
         double value = integral.calculateIntegral();
