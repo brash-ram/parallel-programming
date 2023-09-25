@@ -62,10 +62,8 @@ public class IntegralSinMultX implements Runnable {
 
         int percent = 100 / STEP_INFO;
 
-        Future<Double> futureIntegral1 = calcIntegralInFuture(a, b, n, f);
-        n *= 2;
-        Future<Double> futureIntegral2 = calcIntegralInFuture(a, b, n, f);
-        n *= 2;
+        Future<Double> futureIntegral1 = null;
+        Future<Double> futureIntegral2 = null;
 
         System.out.println("0%");
 
@@ -86,14 +84,28 @@ public class IntegralSinMultX implements Runnable {
 
             integralPrev = integral;
 
-            while (!futureIntegral1.isDone()) {
+            if (hx * percent <= 40) {
+                integral = calcIntegral(a, b, n, f);
+                n *= 2;
+            } else {
+                if (futureIntegral1 == null) {
+                    futureIntegral1 = calcIntegralInFuture(a, b, n, f);
+                    n *= 2;
+                }
+                if (futureIntegral2 == null) {
+                    futureIntegral2 = calcIntegralInFuture(a, b, n, f);
+                    n *= 2;
+                }
+
+                while (!futureIntegral1.isDone()) {
+                }
+
+                integral = futureIntegral1.get();
+                futureIntegral1 = futureIntegral2;
+
+                futureIntegral2 = calcIntegralInFuture(a, b, n, f);
+                n *= 2;
             }
-
-            integral = futureIntegral1.get();
-            futureIntegral1 = futureIntegral2;
-
-            futureIntegral2 = calcIntegralInFuture(a, b, n, f);
-            n *= 2;
 
         } while (Math.abs(integral - integralPrev) > accuracy);
 
@@ -103,17 +115,19 @@ public class IntegralSinMultX implements Runnable {
     }
 
     private Future<Double> calcIntegralInFuture(double a, double b, long n, Function<Double, Double> f) {
-        return executorService.submit(() -> {
-            double h = (b - a) / n;
-            double sum = 0;
+        return executorService.submit(() -> calcIntegral(a, b, n, f));
+    }
 
-            for (int i = 0; i < n; i++) {
-                double x0 = a + i * h;
-                double x1 = a + (i + 1) * h;
-                sum += (f.apply(x0) + f.apply(x1));
-            }
+    private Double calcIntegral(double a, double b, long n, Function<Double, Double> f) {
+        double h = (b - a) / n;
+        double sum = 0;
 
-            return (h / 2) * sum;
-        });
+        for (int i = 0; i < n; i++) {
+            double x0 = a + i * h;
+            double x1 = a + (i + 1) * h;
+            sum += (f.apply(x0) + f.apply(x1));
+        }
+
+        return (h / 2) * sum;
     }
 }
