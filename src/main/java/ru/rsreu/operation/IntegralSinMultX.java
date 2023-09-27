@@ -1,9 +1,6 @@
 package ru.rsreu.operation;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 public class IntegralSinMultX implements Runnable {
@@ -95,9 +92,6 @@ public class IntegralSinMultX implements Runnable {
                 if (futureIntegral2 == null) {
                     futureIntegral2 = calcIntegralInFuture(a, b, n, f);
                     n *= 2;
-                }
-
-                while (!futureIntegral1.isDone()) {
                 }
 
                 integral = futureIntegral1.get();
