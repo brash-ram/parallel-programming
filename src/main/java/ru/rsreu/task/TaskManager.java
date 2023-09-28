@@ -17,14 +17,6 @@ public class TaskManager {
         return instance;
     }
 
-//    public void clearPool() {
-//        for (String key : pool.keySet()) {
-//            if (pool.get(key).isAlive()) {
-//                pool.remove(key);
-//            }
-//        }
-//    }
-
     public long startTask(TaskLevel level) {
         Thread thread = new Thread(new IntegralSinMultX(level.getLevel()));
         thread.setName("THREAD_" + ID_SEQUENCE);
