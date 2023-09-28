@@ -11,7 +11,7 @@ public class IntegralSinMultX implements Runnable {
 
     public IntegralSinMultX(double accuracy) {
         this.accuracy = accuracy;
-        executorService = Executors.newFixedThreadPool(2);
+        executorService = Executors.newCachedThreadPool();
         // accuracy = 1e-14 == 2 sec
     }
 
@@ -19,13 +19,15 @@ public class IntegralSinMultX implements Runnable {
     public void run() {
         try {
             System.out.println("Значение интеграла = " + calculateIntegral());
-        } catch (Exception ex) {
+        } catch (InterruptedException ex) {
             System.out.println("Вычисление интеграла прервано");
+        } catch (Exception ex) {
+            System.out.println("Вычисление интеграла прервано " + ex.getMessage());
         }
 
     }
 
-    public double calculateIntegral() throws Exception {
+    public double calculateIntegral() throws InterruptedException, ExecutionException {
         double a = 0;
         double b = 1;
 
@@ -47,7 +49,7 @@ public class IntegralSinMultX implements Runnable {
         return millis / 1000.0;
     }
 
-    private double calculateIntegral(double a, double b, Function<Double, Double> f) throws Exception {
+    private double calculateIntegral(double a, double b, Function<Double, Double> f) throws InterruptedException, ExecutionException {
         long n = 1L;
 
         double integralPrev = 0;
@@ -65,9 +67,6 @@ public class IntegralSinMultX implements Runnable {
         System.out.println("0%");
 
         do {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new Exception();
-            }
 
             if (hAccuracy > Math.abs(integral - integralPrev)) {
                 while (hAccuracy * h0Accuracy > Math.abs(integral - integralPrev) && hx != 1) {
