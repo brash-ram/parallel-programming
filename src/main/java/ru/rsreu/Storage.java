@@ -5,26 +5,37 @@ import java.util.List;
 
 public class Storage {
 
-    private static final Object lock = new Object();
+    private static final Object LOCK = new Object();
 
     private static class LazyInitStorage {
-        static final List<Double> STORAGE_LIST = new ArrayList<>();
+        private static List<Double> STORAGE_LIST;
+
+        private static final Object LOCK_STORAGE = new Object();
+
+        private static List<Double> getStorage() {
+            if (STORAGE_LIST == null) {
+                synchronized (LOCK_STORAGE) {
+                    STORAGE_LIST = new ArrayList<>();
+                }
+            }
+            return STORAGE_LIST;
+        }
     }
 
     public static void add(Double value) {
-        synchronized (lock) {
-            LazyInitStorage.STORAGE_LIST.add(value);
-            lock.notify();
+        synchronized (LOCK) {
+            LazyInitStorage.getStorage().add(value);
+            LOCK.notify();
         }
     }
 
     public static double get() throws InterruptedException {
-        synchronized (lock) {
-            while (LazyInitStorage.STORAGE_LIST.size() < 1) {
-                lock.wait();
+        synchronized (LOCK) {
+            while (LazyInitStorage.getStorage().size() < 1) {
+                LOCK.wait();
             }
-            double value = LazyInitStorage.STORAGE_LIST.get(0);
-            LazyInitStorage.STORAGE_LIST.remove(0);
+            double value = LazyInitStorage.getStorage().get(0);
+            LazyInitStorage.getStorage().remove(0);
             return value;
         }
     }
