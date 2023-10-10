@@ -1,56 +1,33 @@
 package ru.rsreu.operation;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import ru.rsreu.Storage;
+import ru.rsreu.ThreadPool;
+
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
-public class IntegralSinMultX implements Runnable {
+public class IntegralSinMultX {
     private double accuracy;
     private static final int STEP_INFO = 20;
 
-    private ExecutorService executorService;
+    private static final int NUMBER_THREADS = 5;
+
+    private ThreadPool threadPool;
 
     public IntegralSinMultX(double accuracy) {
         this.accuracy = accuracy;
-        executorService = Executors.newFixedThreadPool(2);
+        threadPool = new ThreadPool(NUMBER_THREADS);
         // accuracy = 1e-14 == 2 sec
     }
 
-    @Override
-    public void run() {
-        try {
-            System.out.println("Значение интеграла = " + calculateIntegral());
-        } catch (Exception ex) {
-            System.out.println("Вычисление интеграла прервано");
-        }
-
-    }
-
-    public double calculateIntegral() throws Exception {
+    public double calculateIntegral() throws InterruptedException {
         double a = 0;
         double b = 1;
 
         return calculateIntegral(a, b, x -> Math.sin(x) * x);
     }
 
-    public long getExecutionTimeMillis() {
-        long start = System.currentTimeMillis();
-        try {
-            calculateIntegral();
-        } catch (Exception ex) {
-            System.out.println("Вычисление интеграла прервано");
-        }
-        return System.currentTimeMillis() - start;
-    }
-
-    public double getExecutionTimeSec() {
-        long millis = getExecutionTimeMillis();
-        return millis / 1000.0;
-    }
-
-    private double calculateIntegral(double a, double b, Function<Double, Double> f) throws Exception {
+    private double calculateIntegral(double a, double b, Function<Double, Double> f) throws InterruptedException {
         long n = 1L;
 
         double integralPrev = 0;
@@ -59,21 +36,16 @@ public class IntegralSinMultX implements Runnable {
         int hx = 1;
         double h0Accuracy = Math.pow(accuracy, 1.0 / STEP_INFO);
         double hAccuracy = h0Accuracy;
-
         int percent = 100 / STEP_INFO;
-
-        Future<Double> futureIntegral1 = calcIntegralInFuture(a, b, n, f);
-        n *= 2;
-        Future<Double> futureIntegral2 = calcIntegralInFuture(a, b, n, f);
-        n *= 2;
 
         System.out.println("0%");
 
-        do {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new Exception();
-            }
+        for (int i = 0; i < NUMBER_THREADS; i++) {
+            threadPool.runTask(getRunCalcIntegral(a, b, n, f));
+            n *= 2;
+        }
 
+        do {
             if (hAccuracy > Math.abs(integral - integralPrev)) {
                 while (hAccuracy * h0Accuracy > Math.abs(integral - integralPrev) && hx != 1) {
                     hAccuracy *= h0Accuracy;
@@ -85,35 +57,36 @@ public class IntegralSinMultX implements Runnable {
             }
 
             integralPrev = integral;
+            integral = Storage.get();
 
-            while (!futureIntegral1.isDone()) {
-            }
-
-            integral = futureIntegral1.get();
-            futureIntegral1 = futureIntegral2;
-
-            futureIntegral2 = calcIntegralInFuture(a, b, n, f);
+            if (Math.abs(integral - integralPrev) > accuracy)
+                threadPool.runTask(getRunCalcIntegral(a, b, n, f));
             n *= 2;
 
         } while (Math.abs(integral - integralPrev) > accuracy);
+
+        threadPool.stopAll();
 
         System.out.println("100%");
 
         return integral;
     }
 
-    private Future<Double> calcIntegralInFuture(double a, double b, long n, Function<Double, Double> f) {
-        return executorService.submit(() -> {
+    private Runnable getRunCalcIntegral(double a, double b, long n, Function<Double, Double> f) {
+        return () -> {
             double h = (b - a) / n;
             double sum = 0;
 
             for (int i = 0; i < n; i++) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 double x0 = a + i * h;
                 double x1 = a + (i + 1) * h;
                 sum += (f.apply(x0) + f.apply(x1));
             }
 
-            return (h / 2) * sum;
-        });
+            Storage.add((h / 2) * sum);
+        };
     }
 }
