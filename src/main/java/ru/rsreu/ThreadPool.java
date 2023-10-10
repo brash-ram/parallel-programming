@@ -16,6 +16,6 @@ public class ThreadPool {
     }
 
     public void stopAll() {
-        executorService.shutdown();
+        executorService.shutdownNow();
     }
 }

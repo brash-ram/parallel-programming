@@ -2,6 +2,7 @@ package ru.rsreu;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class Storage {
 
@@ -20,18 +21,12 @@ public class Storage {
 
     public static double get() throws InterruptedException {
         synchronized (lock) {
-            if (LazyInitStorage.STORAGE_LIST.size() > 0) {
-                double value = LazyInitStorage.STORAGE_LIST.get(0);
-                LazyInitStorage.STORAGE_LIST.remove(0);
-                return value;
-            } else {
-                while (LazyInitStorage.STORAGE_LIST.size() < 1) {
-                    lock.wait();
-                }
-                double value = LazyInitStorage.STORAGE_LIST.get(0);
-                LazyInitStorage.STORAGE_LIST.remove(0);
-                return value;
+            while (LazyInitStorage.STORAGE_LIST.size() < 1) {
+                lock.wait();
             }
+            double value = LazyInitStorage.STORAGE_LIST.get(0);
+            LazyInitStorage.STORAGE_LIST.remove(0);
+            return value;
         }
     }
 }
