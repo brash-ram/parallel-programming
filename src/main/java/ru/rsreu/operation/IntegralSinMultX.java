@@ -1,9 +1,10 @@
 package ru.rsreu.operation;
 
 import ru.rsreu.Storage;
+import ru.rsreu.TaskReleaseTimeManager;
 import ru.rsreu.ThreadPool;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 
 public class IntegralSinMultX {
@@ -38,10 +39,13 @@ public class IntegralSinMultX {
         double hAccuracy = h0Accuracy;
         int percent = 100 / STEP_INFO;
 
+        CountDownLatch countDownLatch;
+
         System.out.println("0%");
 
         for (int i = 0; i < NUMBER_THREADS; i++) {
-            threadPool.runTask(getRunCalcIntegral(a, b, n, f));
+            countDownLatch = new CountDownLatch(1);
+            threadPool.runTask(getRunCalcIntegral(a, b, n, f, countDownLatch), countDownLatch);
             n *= 2;
         }
 
@@ -59,8 +63,10 @@ public class IntegralSinMultX {
             integralPrev = integral;
             integral = Storage.get();
 
-            if (Math.abs(integral - integralPrev) > accuracy)
-                threadPool.runTask(getRunCalcIntegral(a, b, n, f));
+            if (Math.abs(integral - integralPrev) > accuracy) {
+                countDownLatch = new CountDownLatch(1);
+                threadPool.runTask(getRunCalcIntegral(a, b, n, f, countDownLatch), countDownLatch);
+            }
             n *= 2;
 
         } while (Math.abs(integral - integralPrev) > accuracy);
@@ -72,7 +78,7 @@ public class IntegralSinMultX {
         return integral;
     }
 
-    private Runnable getRunCalcIntegral(double a, double b, long n, Function<Double, Double> f) {
+    private Runnable getRunCalcIntegral(double a, double b, long n, Function<Double, Double> f, CountDownLatch countDownLatch) {
         return () -> {
             double h = (b - a) / n;
             double sum = 0;
@@ -87,6 +93,7 @@ public class IntegralSinMultX {
             }
 
             Storage.add((h / 2) * sum);
+            countDownLatch.countDown();
         };
     }
 }
