@@ -12,12 +12,13 @@ public class IntegralSinMultX {
     private static final int STEP_INFO = 20;
 
     private static final int NUMBER_THREADS = 5;
+    private static final int NUMBER_AVAILABLE_THREADS = 2;
 
     private ThreadPool threadPool;
 
     public IntegralSinMultX(double accuracy) {
         this.accuracy = accuracy;
-        threadPool = new ThreadPool(NUMBER_THREADS);
+        threadPool = new ThreadPool(NUMBER_THREADS, NUMBER_AVAILABLE_THREADS);
         // accuracy = 1e-14 == 2 sec
     }
 
