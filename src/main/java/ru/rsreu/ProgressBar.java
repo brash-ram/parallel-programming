@@ -9,7 +9,6 @@ public class ProgressBar {
 
     private static final Lock LOCK = new ReentrantLock();
 
-    private double valuePrev;
     private double value;
     private boolean isEdited = false;
 
@@ -38,9 +37,9 @@ public class ProgressBar {
         return isEdited;
     }
 
-    public void setValue(double value) {
+    public void setValueAndUpdateProgress(double value) {
         LOCK.lock();
-        this.valuePrev = this.value;
+        double valuePrev = this.value;
         this.value = value;
         if (h * h0 > Math.abs(value - valuePrev)) {
             h *= h0;
