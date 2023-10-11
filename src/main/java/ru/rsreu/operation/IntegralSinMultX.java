@@ -1,7 +1,7 @@
 package ru.rsreu.operation;
 
+import ru.rsreu.ProgressBar;
 import ru.rsreu.Storage;
-import ru.rsreu.TaskReleaseTimeManager;
 import ru.rsreu.ThreadPool;
 
 import java.util.concurrent.CountDownLatch;
@@ -36,7 +36,9 @@ public class IntegralSinMultX {
 
         CountDownLatch countDownLatch;
 
-        System.out.println("0%");
+        ProgressBar.getInstance().setH0(accuracy);
+
+        System.out.println("PROGRESS [0%]");
 
         for (int i = 0; i < NUMBER_THREADS; i++) {
             countDownLatch = new CountDownLatch(1);
@@ -45,14 +47,9 @@ public class IntegralSinMultX {
         }
 
         do {
-            if (hAccuracy > Math.abs(integral - integralPrev)) {
-                while (hAccuracy * h0Accuracy > Math.abs(integral - integralPrev) && hx != 1) {
-                    hAccuracy *= h0Accuracy;
-                    hx++;
-                }
-                System.out.println(hx * percent + "%");
-                hAccuracy *= h0Accuracy;
-                hx++;
+            Integer progress = ProgressBar.getInstance().getUpdatedProgress();
+            if (progress != null) {
+                System.out.println("PROGRESS [" + progress + "%]");
             }
 
             integralPrev = integral;
@@ -66,9 +63,9 @@ public class IntegralSinMultX {
 
         } while (Math.abs(integral - integralPrev) > accuracy);
 
-        threadPool.stopAll();
+        System.out.println("PROGRESS [100%]");
 
-        System.out.println("100%");
+        threadPool.stopAll();
 
         return integral;
     }

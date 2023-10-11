@@ -11,7 +11,7 @@ public class ProgressBar {
 
     private double valuePrev;
     private double value;
-    private boolean isDirty = false;
+    private boolean isEdited = false;
 
     private static final int STEP_INFO = 20;
     private static final int PERCENT = 100 / STEP_INFO;
@@ -22,41 +22,47 @@ public class ProgressBar {
 
     public static ProgressBar getInstance() {
         if (instance == null) {
-            throw new IllegalStateException();
-        }
-        return instance;
-    }
-
-    public static ProgressBar getInstance(double h0) {
-        if (instance == null) {
             LOCK.lock();
-            instance = new ProgressBar(h0);
+            instance = new ProgressBar();
             LOCK.unlock();
         }
         return instance;
     }
 
-    public ProgressBar(double h0) {
-        this.h0 = h0;
+    public void setH0(Double accuracy) {
+        this.h0 = Math.pow(accuracy, 1.0 / STEP_INFO);
+        this.h = h0;
+    }
+
+    public boolean isEdited() {
+        return isEdited;
     }
 
     public void setValue(double value) {
         LOCK.lock();
+        this.valuePrev = this.value;
         this.value = value;
-        while (h * h0 > Math.abs(value - valuePrev) && hx != 1) {
+        if (h * h0 > Math.abs(value - valuePrev)) {
             h *= h0;
             hx++;
+            isEdited = true;
         }
         LOCK.unlock();
     }
 
-    public void setH0(double h0) {
-        this.h0 = h0;
-    }
-
-    public int getProgress() {
-        if (h0 == null) {
-            throw new IllegalStateException();
+    public Integer getUpdatedProgress() {
+        LOCK.lock();
+        if (isEdited) {
+            int progress = hx * PERCENT;
+            h *= h0;
+            hx++;
+            isEdited = false;
+            LOCK.unlock();
+            return progress;
+        } else {
+            LOCK.unlock();
+            return null;
         }
+
     }
 }

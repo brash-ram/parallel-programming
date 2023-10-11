@@ -16,6 +16,7 @@ public class Storage {
             LazyInitStorage.STORAGE_LIST.add(value);
             lock.notify();
         }
+        ProgressBar.getInstance().setValue(value);
     }
 
     public static double get() throws InterruptedException {
