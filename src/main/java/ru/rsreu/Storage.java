@@ -15,7 +15,9 @@ public class Storage {
         private static List<Double> getStorage() {
             if (STORAGE_LIST == null) {
                 synchronized (LOCK_STORAGE) {
-                    STORAGE_LIST = new ArrayList<>();
+                    if (STORAGE_LIST == null) {
+                        STORAGE_LIST = new ArrayList<>();
+                    }
                 }
             }
             return STORAGE_LIST;
