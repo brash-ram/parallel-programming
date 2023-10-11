@@ -9,10 +9,9 @@ import java.util.function.Function;
 
 public class IntegralSinMultX {
     private double accuracy;
-    private static final int STEP_INFO = 20;
 
     private static final int NUMBER_THREADS = 5;
-    private static final int NUMBER_AVAILABLE_THREADS = 2;
+    private static final int NUMBER_AVAILABLE_THREADS = 5;
 
     private ThreadPool threadPool;
 
@@ -34,11 +33,6 @@ public class IntegralSinMultX {
 
         double integralPrev = 0;
         double integral = 0;
-
-        int hx = 1;
-        double h0Accuracy = Math.pow(accuracy, 1.0 / STEP_INFO);
-        double hAccuracy = h0Accuracy;
-        int percent = 100 / STEP_INFO;
 
         CountDownLatch countDownLatch;
 
