@@ -7,7 +7,7 @@ public class Storage {
 
     private static final Object LOCK = new Object();
 
-    private static class LazyInitStorage {
+    private static class DoubleCheckInitStorage {
         private static List<Double> STORAGE_LIST;
 
         private static final Object LOCK_STORAGE = new Object();
@@ -24,18 +24,18 @@ public class Storage {
 
     public static void add(Double value) {
         synchronized (LOCK) {
-            LazyInitStorage.getStorage().add(value);
+            DoubleCheckInitStorage.getStorage().add(value);
             LOCK.notify();
         }
     }
 
     public static double get() throws InterruptedException {
         synchronized (LOCK) {
-            while (LazyInitStorage.getStorage().size() < 1) {
+            while (DoubleCheckInitStorage.getStorage().size() < 1) {
                 LOCK.wait();
             }
-            double value = LazyInitStorage.getStorage().get(0);
-            LazyInitStorage.getStorage().remove(0);
+            double value = DoubleCheckInitStorage.getStorage().get(0);
+            DoubleCheckInitStorage.getStorage().remove(0);
             return value;
         }
     }
