@@ -47,9 +47,9 @@ public class IntegralSinMultX {
         }
 
         do {
-            Integer progress = ProgressBar.getInstance().getUpdatedProgress();
-            if (progress != null) {
-                System.out.println("PROGRESS [" + progress + "%]");
+            ProgressBar bar = ProgressBar.getInstance();
+            if (bar.isEdited()) {
+                System.out.println("PROGRESS [" + bar.getUpdatedProgress() + "%]");
             }
 
             integralPrev = integral;

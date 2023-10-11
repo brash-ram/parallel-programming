@@ -62,6 +62,5 @@ public class ProgressBar {
             LOCK.unlock();
             return null;
         }
-
     }
 }
