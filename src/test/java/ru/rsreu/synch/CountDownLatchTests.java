@@ -2,8 +2,7 @@ package ru.rsreu.synch;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CountDownLatchTests {
 
@@ -63,7 +62,7 @@ public class CountDownLatchTests {
     }
 
     @Test
-    void testCountDownLatchReset() throws InterruptedException {
+    void testCountDownLatchTimeout() throws InterruptedException {
         int count = 1;
         CountDownLatch latch = new CountDownLatch(count);
 
@@ -72,15 +71,15 @@ public class CountDownLatchTests {
                 Thread.sleep(1000);
                 latch.countDown();
             } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         });
-        assertEquals(count, latch.getCount());
 
         testThread.start();
-        latch.await();
+        Thread.sleep(100);
+        latch.await(100);
 
-        assertFalse(testThread.isAlive());
-        assertEquals(0, latch.getCount());
+        assertTrue(testThread.isAlive());
+        assertNotEquals(0, latch.getCount());
+        testThread.interrupt();
     }
 }

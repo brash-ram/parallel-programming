@@ -12,7 +12,6 @@ public class LockTests {
         Lock lock = new Lock();
 
         lock.lock();
-        assertTrue(lock.tryLock());
 
         assertFalse(lock.tryLock());
 
@@ -44,6 +43,7 @@ public class LockTests {
         t1.start();
         Thread.sleep(100);
         assertFalse(lock.tryLock());
+        lock.unlock();
 
         t1.join();
         assertTrue(lock.tryLock());

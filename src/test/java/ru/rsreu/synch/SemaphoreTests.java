@@ -29,4 +29,24 @@ public class SemaphoreTests {
         assertTrue(semaphore.tryAcquire());
         assertFalse(semaphore.tryAcquire());
     }
+
+    @Test
+    void testSemaphoreTryAcquireWithTimout() throws InterruptedException {
+        Semaphore semaphore = new Semaphore(1);
+
+        Thread testThread = new Thread(() -> {
+            try {
+                semaphore.acquire();
+                Thread.sleep(1000);
+                semaphore.release();
+            } catch (InterruptedException e) {
+            }
+        });
+
+        testThread.start();
+        Thread.sleep(100);
+
+        assertFalse(semaphore.tryAcquire(100));
+        testThread.interrupt();
+    }
 }
