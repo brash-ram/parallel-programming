@@ -27,6 +27,35 @@ public class Semaphore {
         }
     }
 
+    public boolean tryAcquire(int timeout) throws InterruptedException {
+        synchronized(LOCK) {
+            if (permits > 0) {
+                permits--;
+                return true;
+            }
+
+            if (timeout <= 0) {
+                return false;
+            }
+
+            long endTime = System.currentTimeMillis() + timeout;
+            long remainingTime = timeout;
+
+            while (remainingTime > 0) {
+                wait(remainingTime);
+
+                if (permits > 0) {
+                    permits--;
+                    return true;
+                }
+
+                remainingTime = endTime - System.currentTimeMillis();
+            }
+
+            return false;
+        }
+    }
+
     public void release() {
         synchronized(LOCK) {
             permits++;
