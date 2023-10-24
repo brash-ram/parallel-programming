@@ -40,6 +40,7 @@ public class SemaphoreTests {
                 Thread.sleep(1000);
                 semaphore.release();
             } catch (InterruptedException e) {
+                System.out.println(e.getMessage());
             }
         });
 

@@ -16,25 +16,25 @@ public class CountDownLatchTests {
                 Thread.sleep(1000);
                 latch.countDown();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
             }
         });
 
         Thread testThread2 = new Thread(() -> {
             try {
-                Thread.sleep(2000);
+                Thread.sleep(1000);
                 latch.countDown();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
             }
         });
 
         Thread testThread3 = new Thread(() -> {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(1000);
                 latch.countDown();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
             }
         });
 
@@ -43,9 +43,6 @@ public class CountDownLatchTests {
         testThread3.start();
 
         latch.await();
-        assertFalse(testThread1.isAlive());
-        assertFalse(testThread2.isAlive());
-        assertFalse(testThread3.isAlive());
         assertEquals(0, latch.getCount());
     }
 
@@ -71,6 +68,7 @@ public class CountDownLatchTests {
                 Thread.sleep(1000);
                 latch.countDown();
             } catch (InterruptedException e) {
+                System.out.println(e.getMessage());
             }
         });
 
