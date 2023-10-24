@@ -4,22 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TaskReleaseTimeManager implements Runnable {
 
     private static final List<CountDownLatch> QUEUE = new ArrayList<>();
-    private static final ReadWriteLock LOCK = new ReentrantReadWriteLock();
-    private static final Lock READ_LOCK = LOCK.readLock();
-    private static final Lock WRITE_LOCK = LOCK.writeLock();
+    private static final Lock LOCK = new ReentrantLock();
 
     private Long start = null;
 
     public static void add(CountDownLatch latch) {
-        WRITE_LOCK.lock();
+        LOCK.lock();
         QUEUE.add(latch);
-        WRITE_LOCK.unlock();
+        LOCK.unlock();
     }
 
     @Override
@@ -39,14 +36,16 @@ public class TaskReleaseTimeManager implements Runnable {
                 throw new InterruptedException();
             }
 
-            READ_LOCK.lock();
-            if (QUEUE.size() > 0) {
-                countDownLatch = QUEUE.get(0);
-            } else {
-                READ_LOCK.unlock();
-                continue;
+            LOCK.lock();
+            try {
+                if (QUEUE.size() > 0) {
+                    countDownLatch = QUEUE.get(0);
+                } else {
+                    continue;
+                }
+            } finally {
+                LOCK.unlock();
             }
-            READ_LOCK.unlock();
 
             countDownLatch.await();
             time = System.nanoTime() / 1000;
@@ -56,9 +55,9 @@ public class TaskReleaseTimeManager implements Runnable {
 
             System.out.println("Задача завершилась с задержкой = " + (time - start));
 
-            WRITE_LOCK.lock();
+            LOCK.lock();
             QUEUE.remove(0);
-            WRITE_LOCK.unlock();
+            LOCK.unlock();
         }
     }
 }
