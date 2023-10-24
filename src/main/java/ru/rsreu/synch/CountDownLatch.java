@@ -24,6 +24,22 @@ public class CountDownLatch {
             }
         }
     }
+    public void await(int timeoutMillis) throws InterruptedException {
+        synchronized(LOCK) {
+            if (timeoutMillis <= 0) {
+                return;
+            }
+
+            long endTime = System.currentTimeMillis() + timeoutMillis;
+            long remainingTime = timeoutMillis;
+
+            while (remainingTime > 0) {
+                LOCK.wait(remainingTime);
+                remainingTime = endTime - System.currentTimeMillis();
+            }
+        }
+    }
+
 
     public boolean tryAwait() {
         synchronized(LOCK) {
