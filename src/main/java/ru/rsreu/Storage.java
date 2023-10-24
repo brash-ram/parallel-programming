@@ -2,6 +2,7 @@ package ru.rsreu;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 public class Storage {
 
@@ -16,7 +17,11 @@ public class Storage {
             LazyInitStorage.STORAGE_LIST.add(value);
             lock.notify();
         }
-        ProgressBar.getInstance().setValueAndUpdateProgress(value);
+        try {
+            ProgressBar.getInstance().setValueAndUpdateProgress(value);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public static double get() throws InterruptedException {

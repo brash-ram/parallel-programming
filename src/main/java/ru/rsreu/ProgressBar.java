@@ -1,13 +1,13 @@
 package ru.rsreu;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+
+import ru.rsreu.synch.Lock;
 
 public class ProgressBar {
 
     private static ProgressBar instance;
 
-    private static final Lock LOCK = new ReentrantLock();
+    private static final Lock LOCK = new Lock();
 
     private double value;
     private boolean isEdited = false;
@@ -19,11 +19,14 @@ public class ProgressBar {
     private Double h0;
     private double h;
 
-    public static ProgressBar getInstance() {
+    public static ProgressBar getInstance() throws InterruptedException {
         if (instance == null) {
             LOCK.lock();
-            instance = new ProgressBar();
-            LOCK.unlock();
+            try {
+                instance = new ProgressBar();
+            } finally {
+                LOCK.unlock();
+            }
         }
         return instance;
     }
@@ -38,29 +41,40 @@ public class ProgressBar {
     }
 
     public void setValueAndUpdateProgress(double value) {
-        LOCK.lock();
-        double valuePrev = this.value;
-        this.value = value;
-        if (h * h0 > Math.abs(value - valuePrev)) {
-            h *= h0;
-            hx++;
-            isEdited = true;
+        try {
+            LOCK.lock();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return;
         }
-        LOCK.unlock();
+        try {
+            double valuePrev = this.value;
+            this.value = value;
+            if (h * h0 > Math.abs(value - valuePrev)) {
+                h *= h0;
+                hx++;
+                isEdited = true;
+            }
+        } finally {
+            LOCK.unlock();
+        }
     }
 
-    public Integer getUpdatedProgress() {
+    public Integer getUpdatedProgress() throws InterruptedException {
         LOCK.lock();
-        if (isEdited) {
-            int progress = hx * PERCENT;
-            h *= h0;
-            hx++;
-            isEdited = false;
+        try {
+            if (isEdited) {
+                int progress = hx * PERCENT;
+                h *= h0;
+                hx++;
+                isEdited = false;
+                return progress;
+            } else {
+                return null;
+            }
+        } finally {
             LOCK.unlock();
-            return progress;
-        } else {
-            LOCK.unlock();
-            return null;
         }
+
     }
 }

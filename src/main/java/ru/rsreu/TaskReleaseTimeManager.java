@@ -1,22 +1,31 @@
 package ru.rsreu;
 
+import ru.rsreu.synch.CountDownLatch;
+import ru.rsreu.synch.Lock;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class TaskReleaseTimeManager implements Runnable {
 
     private static final List<CountDownLatch> QUEUE = new ArrayList<>();
-    private static final Lock LOCK = new ReentrantLock();
+    private static final Lock LOCK = new Lock();
 
     private Long start = null;
 
     public static void add(CountDownLatch latch) {
-        LOCK.lock();
-        QUEUE.add(latch);
-        LOCK.unlock();
+        try {
+            LOCK.lock();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            System.out.println(ex.getMessage());
+            return;
+        }
+        try {
+            QUEUE.add(latch);
+        } finally {
+            LOCK.unlock();
+        }
     }
 
     @Override
@@ -56,8 +65,11 @@ public class TaskReleaseTimeManager implements Runnable {
             System.out.println("Задача завершилась с задержкой = " + (time - start));
 
             LOCK.lock();
-            QUEUE.remove(0);
-            LOCK.unlock();
+            try {
+                QUEUE.remove(0);
+            } finally {
+                LOCK.unlock();
+            }
         }
     }
 }

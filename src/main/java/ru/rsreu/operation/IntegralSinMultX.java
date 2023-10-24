@@ -3,8 +3,8 @@ package ru.rsreu.operation;
 import ru.rsreu.ProgressBar;
 import ru.rsreu.Storage;
 import ru.rsreu.ThreadPool;
+import ru.rsreu.synch.CountDownLatch;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 
 public class IntegralSinMultX {
@@ -47,6 +47,10 @@ public class IntegralSinMultX {
         }
 
         do {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
             ProgressBar bar = ProgressBar.getInstance();
             if (bar.isEdited()) {
                 System.out.println("PROGRESS [" + bar.getUpdatedProgress() + "%]");
@@ -72,6 +76,7 @@ public class IntegralSinMultX {
 
     private Runnable getRunCalcIntegral(double a, double b, long n, Function<Double, Double> f, CountDownLatch countDownLatch) {
         return () -> {
+            System.out.println("Задача запущена с n = " + n);
             double h = (b - a) / n;
             double sum = 0;
 

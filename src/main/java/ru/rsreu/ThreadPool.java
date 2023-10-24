@@ -1,9 +1,10 @@
 package ru.rsreu;
 
-import java.util.concurrent.CountDownLatch;
+import ru.rsreu.synch.CountDownLatch;
+import ru.rsreu.synch.Semaphore;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 
 public class ThreadPool {
 
