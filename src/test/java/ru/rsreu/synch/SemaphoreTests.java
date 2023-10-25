@@ -15,7 +15,7 @@ public class SemaphoreTests {
     }
 
     @Test
-    void testSemaphoreRelease() throws InterruptedException {
+    void testSemaphoreRelease() {
         Semaphore semaphore = new Semaphore(0);
         semaphore.release();
 
@@ -23,7 +23,7 @@ public class SemaphoreTests {
     }
 
     @Test
-    void testSemaphoreTryAcquire() throws InterruptedException {
+    void testSemaphoreTryAcquire() {
         Semaphore semaphore = new Semaphore(1);
 
         assertTrue(semaphore.tryAcquire());

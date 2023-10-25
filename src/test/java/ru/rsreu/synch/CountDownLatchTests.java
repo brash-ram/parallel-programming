@@ -47,7 +47,7 @@ public class CountDownLatchTests {
     }
 
     @Test
-    void testCountDownLatchCount() throws InterruptedException {
+    void testCountDownLatchCount() {
         int count = 3;
         CountDownLatch latch = new CountDownLatch(count);
 
