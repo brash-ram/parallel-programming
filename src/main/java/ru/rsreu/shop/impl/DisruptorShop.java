@@ -1,8 +1,6 @@
 package ru.rsreu.shop.impl;
 
-import com.lmax.disruptor.BlockingWaitStrategy;
-import com.lmax.disruptor.BusySpinWaitStrategy;
-import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.lmax.disruptor.util.DaemonThreadFactory;
@@ -13,17 +11,24 @@ import ru.rsreu.shop.Shop;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DisruptorShop extends Shop {
 
     private static final int RING_BUFFER_SIZE = 2048;
+    private final int NUMBER_THREADS = 3;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
 
     private final Lock availableItemsLock = new ReentrantLock();
     private final Lock purchasedItemsStorageLock = new ReentrantLock();
+    private final Object lockItems = new Object();
+
+    private boolean endOfBatchRing = false;
 
     private final Map<Item, Long> availableItems = new HashMap<>();
     private final Map<Client, Map<Item, Long>> purchasedItemsStorage = new HashMap<>();
@@ -38,40 +43,81 @@ public class DisruptorShop extends Shop {
                 RING_BUFFER_SIZE,
                 DaemonThreadFactory.INSTANCE,
                 ProducerType.MULTI,
-                new BusySpinWaitStrategy()
+                new BlockingWaitStrategy()
         );
         ringBuffer = disruptor.getRingBuffer();
-//        disruptor.handleEventsWith((ringBuffer1, sequences) -> );
+        disruptor.handleEventsWith((order, l, b) ->
+                executorService.execute(() -> parseOrder(order.getItem(), order.getNumberItems(), order.getClient(), b))
+        );
+//        disruptor.handleEventsWith(
+//                (order, l, b) -> parseOrder(order.getItem(), order.getNumberItems(), order.getClient(), b)
+//        );
+//        CountDownLatch startDisruptor = new CountDownLatch(1);
+//        executorService.execute(() -> {
+//            disruptor.handleEventsWith(
+//                    (order, l, b) -> parseOrder(order.getItem(), order.getNumberItems(), order.getClient(), b)
+//            );
+//            disruptor.start();
+//            startDisruptor.countDown();
+//        });
+//        try {
+//            startDisruptor.await();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+        disruptor.start();
+
     }
 
     @Override
     public void addItem(Item item, Long number) {
-
+        items.add(item);
+        availableItems.put(item, number);
     }
 
     @Override
     public boolean buyItem(Item item, Long numberItems, Client client) {
-        return false;
-    }
-
-    @Override
-    public Map<Item, Long> getAvailableItems() {
-        return null;
-    }
-
-    @Override
-    public Map<Client, Map<Item, Long>> getPurchasedItems() {
-        return null;
-    }
-
-    private void parseOrder(Item item, Long numberItems, Client client) {
         if (!availableItems.containsKey(item) ||
                 availableItems.get(item) < numberItems ||
                 client.getMoney() < item.getPrice() * numberItems ||
                 numberItems < 1) {
-            return;
+            return false;
         }
+        long sequenceId = ringBuffer.next();
+        Order valueEvent = ringBuffer.get(sequenceId);
+        valueEvent.setItem(item);
+        valueEvent.setNumberItems(numberItems);
+        valueEvent.setClient(client);
+        ringBuffer.publish(sequenceId);
+        return true;
+    }
 
+    @Override
+    public Map<Item, Long> getAvailableItems() {
+//        synchronized (lockItems) {
+//            while (endOfBatchRing) {
+//                try {
+//                    lockItems.wait();
+//                } catch (InterruptedException ignored) {
+//                    return null;
+//                }
+//            }
+//        }
+//        try {
+//            disruptor.shutdown(100, TimeUnit.SECONDS);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+        return availableItems;
+    }
+
+    @Override
+    public Map<Client, Map<Item, Long>> getPurchasedItems() {
+        return purchasedItemsStorage;
+    }
+
+    private void parseOrder(Item item, Long numberItems, Client client, boolean endOfBatch) {
         availableItemsLock.lock();
         boolean isAvailableItem = false;
         try {
@@ -108,5 +154,12 @@ public class DisruptorShop extends Shop {
                 purchasedItemsStorageLock.unlock();
             }
         }
+
+//        if (endOfBatch) {
+//            synchronized (lockItems) {
+//                endOfBatchRing = true;
+//                lockItems.notify();
+//            }
+//        }
     }
 }

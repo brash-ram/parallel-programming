@@ -12,6 +12,4 @@ public class Order {
     private Client client;
     private Long numberItems;
     private Item item;
-
-    public final static EventFactory<Order> EVENT_FACTORY = Order::new;
 }

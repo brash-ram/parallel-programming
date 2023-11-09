@@ -3,10 +3,7 @@ package ru.rsreu.integration;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import ru.rsreu.client.Client;
-import ru.rsreu.factory.ShopFactory;
-import ru.rsreu.factory.TestClientFactory;
-import ru.rsreu.factory.TestQueueShopFactory;
-import ru.rsreu.factory.TestSynchronizedShopFactory;
+import ru.rsreu.factory.*;
 import ru.rsreu.shop.Item;
 import ru.rsreu.shop.Shop;
 import ru.rsreu.utils.TestSettings;
@@ -25,11 +22,21 @@ public class QueuingSystemTest {
     private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
 
     @RepeatedTest(20)
+    public void disruptorShopTest() throws InterruptedException {
+        ShopFactory shopFactory = new TestDisruptorShopFactory();
+        long start = System.currentTimeMillis();
+        queuingSystemTest(shopFactory);
+        System.out.println("Time: " + (System.currentTimeMillis() - start));
+        executorService.shutdownNow();
+    }
+
+    @RepeatedTest(20)
     public void queueShopTest() throws InterruptedException {
         ShopFactory shopFactory = new TestQueueShopFactory();
         long start = System.currentTimeMillis();
         queuingSystemTest(shopFactory);
         System.out.println("Time: " + (System.currentTimeMillis() - start));
+        executorService.shutdownNow();
     }
 
     @RepeatedTest(20)
@@ -38,6 +45,7 @@ public class QueuingSystemTest {
         long start = System.currentTimeMillis();
         queuingSystemTest(shopFactory);
         System.out.println("Time: " + (System.currentTimeMillis() - start));
+        executorService.shutdownNow();
     }
 
     public void queuingSystemTest(ShopFactory shopFactory) throws InterruptedException {
