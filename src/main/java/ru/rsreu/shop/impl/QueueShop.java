@@ -3,11 +3,13 @@ package ru.rsreu.shop.impl;
 import ru.rsreu.client.Client;
 import ru.rsreu.shop.Item;
 import ru.rsreu.shop.Shop;
-import ru.rsreu.utils.TestSettings;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -21,8 +23,7 @@ public class QueueShop extends Shop {
     private final Map<Client, Map<Item, Long>> purchasedItemsStorage = new HashMap<>();
 
     private final int NUMBER_THREADS = 3;
-    private final BlockingQueue<Map<Client, Map<Item, Long>>> orderQueue =
-            new LinkedBlockingQueue<>();
+    private final BlockingQueue<Map<Client, Map<Item, Long>>> orderQueue = new LinkedBlockingQueue<>();
 
 
     public QueueShop(long money) {
@@ -71,6 +72,15 @@ public class QueueShop extends Shop {
 
     @Override
     public Map<Client, Map<Item, Long>> getPurchasedItems() {
+        synchronized (orderQueue) {
+            while (orderQueue.size() > 0) {
+                try {
+                    orderQueue.wait();
+                } catch (InterruptedException ignored) {
+                    return null;
+                }
+            }
+        }
         return purchasedItemsStorage;
     }
 
@@ -99,7 +109,7 @@ public class QueueShop extends Shop {
             }
             if (orderQueue.size() == 0) {
                 synchronized (orderQueue) {
-                    orderQueue.notify();
+                    orderQueue.notifyAll();
                 }
             }
 
@@ -143,7 +153,5 @@ public class QueueShop extends Shop {
                 purchasedItemsStorageLock.unlock();
             }
         }
-
-        return;
     }
 }

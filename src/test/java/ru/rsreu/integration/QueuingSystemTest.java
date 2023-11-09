@@ -30,6 +30,7 @@ public class QueuingSystemTest {
         long start = System.currentTimeMillis();
         queuingSystemTest(shopFactory);
         System.out.println("Time: " + (System.currentTimeMillis() - start));
+        executorService.shutdownNow();
     }
 
     @RepeatedTest(20)
@@ -38,6 +39,7 @@ public class QueuingSystemTest {
         long start = System.currentTimeMillis();
         queuingSystemTest(shopFactory);
         System.out.println("Time: " + (System.currentTimeMillis() - start));
+        executorService.shutdownNow();
     }
 
     public void queuingSystemTest(ShopFactory shopFactory) throws InterruptedException {
