@@ -7,14 +7,13 @@ import ru.rsreu.utils.TestSettings;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class QueueShop extends Shop {
+
+    private static final int SIZE_SHOP_QUEUE = 1000;
     private final Lock availableItemsLock = new ReentrantLock();
     private final Lock purchasedItemsStorageLock = new ReentrantLock();
 
@@ -23,7 +22,7 @@ public class QueueShop extends Shop {
 
     private final int NUMBER_THREADS = 3;
     private final BlockingQueue<Map<Client, Map<Item, Long>>> orderQueue =
-            new ArrayBlockingQueue<>(TestSettings.SIZE_SHOP_QUEUE);
+            new LinkedBlockingQueue<>();
 
 
     public QueueShop(long money) {
@@ -42,6 +41,13 @@ public class QueueShop extends Shop {
 
     @Override
     public boolean buyItem(Item item, Long numberItems, Client client) {
+        if (!availableItems.containsKey(item) ||
+                availableItems.get(item) < numberItems ||
+                client.getMoney() < item.getPrice() * numberItems ||
+                numberItems < 1) {
+            return false;
+        }
+
         Map<Client, Map<Item, Long>> order = new HashMap<>();
         Map<Item, Long> orderItem = new HashMap<>();
         orderItem.put(item, numberItems);
@@ -101,13 +107,6 @@ public class QueueShop extends Shop {
     }
 
     private void parseOrder(Item item, Long numberItems, Client client) {
-        if (!availableItems.containsKey(item) ||
-                availableItems.get(item) < numberItems ||
-                client.getMoney() < item.getPrice() * numberItems ||
-                numberItems < 1) {
-            return;
-        }
-
         availableItemsLock.lock();
         boolean isAvailableItem = false;
         try {
