@@ -4,7 +4,8 @@ import ru.rsreu.shop.Item;
 
 import java.util.Random;
 
-import static ru.rsreu.utils.TestSettings.*;
+import static ru.rsreu.utils.TestSettings.MAX_ITEM_PRICE;
+import static ru.rsreu.utils.TestSettings.MIN_ITEM_PRICE;
 
 public class TestItemFactory {
 

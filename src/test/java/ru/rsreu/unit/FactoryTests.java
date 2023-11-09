@@ -5,7 +5,7 @@ import ru.rsreu.client.Client;
 import ru.rsreu.factory.TestClientFactory;
 import ru.rsreu.factory.TestItemFactory;
 import ru.rsreu.factory.ShopFactory;
-import ru.rsreu.factory.TestShopFactory;
+import ru.rsreu.factory.TestSynchronizedShopFactory;
 import ru.rsreu.shop.Item;
 import ru.rsreu.shop.Shop;
 
@@ -44,7 +44,7 @@ public class FactoryTests {
 
     @Test
     public void shopFactoryTest() {
-        ShopFactory shopFactory = new TestShopFactory();
+        ShopFactory shopFactory = new TestSynchronizedShopFactory();
         Shop shop = shopFactory.getShop();
         Map<Item, Long> mapItems = shop.getAvailableItems();
 

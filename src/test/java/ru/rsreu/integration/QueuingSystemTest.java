@@ -1,10 +1,12 @@
 package ru.rsreu.integration;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import ru.rsreu.client.Client;
 import ru.rsreu.factory.ShopFactory;
 import ru.rsreu.factory.TestClientFactory;
-import ru.rsreu.factory.TestShopFactory;
+import ru.rsreu.factory.TestQueueShopFactory;
+import ru.rsreu.factory.TestSynchronizedShopFactory;
 import ru.rsreu.shop.Item;
 import ru.rsreu.shop.Shop;
 import ru.rsreu.utils.TestSettings;
@@ -22,9 +24,23 @@ public class QueuingSystemTest {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
 
-    @Test
-    public void queuingSystemTest() throws InterruptedException {
-        ShopFactory shopFactory = new TestShopFactory();
+    @RepeatedTest(20)
+    public void queueShopTest() throws InterruptedException {
+        ShopFactory shopFactory = new TestQueueShopFactory();
+        long start = System.currentTimeMillis();
+        queuingSystemTest(shopFactory);
+        System.out.println("Time: " + (System.currentTimeMillis() - start));
+    }
+
+    @RepeatedTest(20)
+    public void synchronizedShopTest() throws InterruptedException {
+        ShopFactory shopFactory = new TestSynchronizedShopFactory();
+        long start = System.currentTimeMillis();
+        queuingSystemTest(shopFactory);
+        System.out.println("Time: " + (System.currentTimeMillis() - start));
+    }
+
+    public void queuingSystemTest(ShopFactory shopFactory) throws InterruptedException {
         Shop shop = shopFactory.getShop();
         List<Client> clients = getTestClients();
 
@@ -34,15 +50,6 @@ public class QueuingSystemTest {
         long startShopMoney = shop.getMoney();
 
         openShop(shop, clients);
-
-        long endClientsMoney = clients.stream().map(Client::getMoney).reduce(Long::sum)
-                .orElseThrow(() -> new RuntimeException("Нет денег у клиентов"));
-        long spentClientsMoney = clients.stream().map(Client::getSpentMoney).reduce(Long::sum)
-                .orElseThrow(() -> new RuntimeException("Нет денег у клиентов"));
-        long endShopMoney = shop.getMoney();
-
-        assertEquals(startClientsMoney, spentClientsMoney + endClientsMoney);
-        assertEquals(startClientsMoney + startShopMoney, endClientsMoney + endShopMoney);
 
         Map<Item, Long> endShopItems = new HashMap<>(shop.getAvailableItems());
         for (Map.Entry<Client, Map<Item, Long>> entry : shop.getPurchasedItems().entrySet()) {
@@ -54,8 +61,16 @@ public class QueuingSystemTest {
                 }
             }
         }
-
         assertEquals(startShopItems, endShopItems);
+
+        long endClientsMoney = clients.stream().map(Client::getMoney).reduce(Long::sum)
+                .orElseThrow(() -> new RuntimeException("Нет денег у клиентов"));
+        long spentClientsMoney = clients.stream().map(Client::getSpentMoney).reduce(Long::sum)
+                .orElseThrow(() -> new RuntimeException("Нет денег у клиентов"));
+        long endShopMoney = shop.getMoney();
+
+        assertEquals(startClientsMoney, spentClientsMoney + endClientsMoney);
+        assertEquals(startClientsMoney + startShopMoney, endClientsMoney + endShopMoney);
     }
 
     public void openShop(Shop shop, List<Client> clients) throws InterruptedException {
@@ -64,7 +79,7 @@ public class QueuingSystemTest {
         for (int i = 0; i < NUMBER_THREADS; i++) {
             Client client = clients.get(i);
 
-            executorService.submit(() -> {
+            executorService.execute(() -> {
                 startLatch.countDown();
                 try {
                     startLatch.await();
@@ -99,17 +114,17 @@ public class QueuingSystemTest {
 
         boolean isPurchased = shop.buyItem(purchasedItem, numberItems, client);
 
-        String purchased = "";
-        String label = "[✓] ";
-        if (!isPurchased) {
-            purchased = " не";
-            label = "[❌] ";
-        }
-
-        System.out.println(
-                label + "Клиент " + client.getId() + purchased + " купил " +
-                        numberItems + " ед. товара " + purchasedItem.getId()
-        );
+//        String purchased = "";
+//        String label = "[✓] ";
+//        if (!isPurchased) {
+//            purchased = " не";
+//            label = "[❌] ";
+//        }
+//
+//        System.out.println(
+//                label + "Клиент " + client.getId() + purchased + " купил " +
+//                        numberItems + " ед. товара " + purchasedItem.getId()
+//        );
     }
 
     private List<Client> getTestClients() {

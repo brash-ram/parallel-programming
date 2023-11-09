@@ -1,12 +1,13 @@
 package ru.rsreu.factory;
 
 import ru.rsreu.shop.Shop;
-import ru.rsreu.shop.impl.ShopImpl;
+import ru.rsreu.shop.impl.SynchronizedShop;
 
 import java.util.Random;
+
 import static ru.rsreu.utils.TestSettings.*;
 
-public class TestShopFactory implements ShopFactory {
+public class TestSynchronizedShopFactory implements ShopFactory {
 
     private Random random = new Random();
 
@@ -17,7 +18,7 @@ public class TestShopFactory implements ShopFactory {
                 MAX_NUMBER_DIFFERENT_ITEM_IN_SHOP - MIN_NUMBER_DIFFERENT_ITEM_IN_SHOP
         ) + MIN_NUMBER_DIFFERENT_ITEM_IN_SHOP;
 
-        Shop shop = new ShopImpl(SHOP_MONEY);
+        Shop shop = new SynchronizedShop(SHOP_MONEY);
         for (int i = 0; i < numberDifferentItems; i++) {
             long numberItem = random.nextInt(
                     MAX_NUMBER_ITEM - MIN_NUMBER_ITEM

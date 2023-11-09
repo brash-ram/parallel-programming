@@ -4,33 +4,22 @@ import ru.rsreu.client.Client;
 import ru.rsreu.shop.Item;
 import ru.rsreu.shop.Shop;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class ShopImpl implements Shop {
+public class SynchronizedShop extends Shop {
 
     private final Lock availableItemsLock = new ReentrantLock();
     private final Lock purchasedItemsStorageLock = new ReentrantLock();
 
-    private final List<Item> items = new ArrayList<>();
-    private final SortedMap<Item, Long> availableItems = new TreeMap<>();
-    private final SortedMap<Client, Map<Item, Long>> purchasedItemsStorage = new TreeMap<>();
+    private final Map<Item, Long> availableItems = new HashMap<>();
+    private final Map<Client, Map<Item, Long>> purchasedItemsStorage = new HashMap<>();
 
-    private Long money;
 
-    public ShopImpl(long money) {
-        this.money = money;
-    }
-
-    @Override
-    public List<Item> getItems() {
-        return items;
-    }
-
-    @Override
-    public Long getMoney() {
-        return money;
+    public SynchronizedShop(long money) {
+        super(money);
     }
 
     @Override
@@ -103,7 +92,6 @@ public class ShopImpl implements Shop {
             }
         }
 
-//        client.setMoney(client.getMoney() - item.getPrice() * numberItems);
         return isAvailableItem;
     }
 

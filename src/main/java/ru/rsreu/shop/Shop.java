@@ -2,20 +2,34 @@ package ru.rsreu.shop;
 
 import ru.rsreu.client.Client;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public interface Shop {
+public abstract class Shop {
 
-    Long getMoney();
+    protected Long money;
 
-    void addItem(Item item, Long number);
+    protected final List<Item> items = new ArrayList<>();
 
-    boolean buyItem(Item item, Long numberItems, Client client);
+    public Shop(Long money) {
+        this.money = money;
+    }
 
-    List<Item> getItems();
+    public Long getMoney() {
+        return money;
+    }
 
-    Map<Item, Long> getAvailableItems();
+    public List<Item> getItems() {
+        return items;
+    }
 
-    Map<Client, Map<Item, Long>> getPurchasedItems();
+    public abstract void addItem(Item item, Long number);
+
+    public abstract boolean buyItem(Item item, Long numberItems, Client client);
+
+
+    public abstract Map<Item, Long> getAvailableItems();
+
+    public abstract Map<Client, Map<Item, Long>> getPurchasedItems();
 }

@@ -3,7 +3,6 @@ package ru.rsreu.client;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import ru.rsreu.shop.Item;
 
 import java.util.Objects;
 
