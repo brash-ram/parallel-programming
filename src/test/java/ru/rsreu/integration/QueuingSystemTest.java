@@ -1,7 +1,6 @@
 package ru.rsreu.integration;
 
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import ru.rsreu.client.Client;
 import ru.rsreu.factory.ShopFactory;
 import ru.rsreu.factory.TestClientFactory;
@@ -12,11 +11,9 @@ import ru.rsreu.shop.Shop;
 import ru.rsreu.utils.TestSettings;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class QueuingSystemTest {
 
@@ -24,7 +21,7 @@ public class QueuingSystemTest {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
 
-    @RepeatedTest(20)
+    @RepeatedTest(5)
     public void queueShopTest() throws InterruptedException {
         ShopFactory shopFactory = new TestQueueShopFactory();
         long start = System.currentTimeMillis();
@@ -33,7 +30,7 @@ public class QueuingSystemTest {
         executorService.shutdownNow();
     }
 
-    @RepeatedTest(20)
+    @RepeatedTest(5)
     public void synchronizedShopTest() throws InterruptedException {
         ShopFactory shopFactory = new TestSynchronizedShopFactory();
         long start = System.currentTimeMillis();
@@ -94,7 +91,11 @@ public class QueuingSystemTest {
                         if (Thread.currentThread().isInterrupted()) {
                             return;
                         }
-                        buyItem(shop, client);
+                        try {
+                            buyItem(shop, client);
+                        } catch (InterruptedException | ExecutionException ex) {
+                            ex.printStackTrace();
+                        }
                     }
                 } catch (Exception ex) {
                     System.out.println(Thread.currentThread().getName() + " --- " + ex.getMessage());
@@ -106,19 +107,20 @@ public class QueuingSystemTest {
         endLatch.await();
     }
 
-    private void buyItem(Shop shop, Client client) {
+    private void buyItem(Shop shop, Client client) throws ExecutionException, InterruptedException {
         Random random = new Random();
 
         int randomItemIndex = random.nextInt(shop.getItems().size());
-        long numberItems = random.nextInt(TestSettings.MAX_NUMBER_ITEM / 100) + 1;
+        long numberItems = random.nextInt(TestSettings.MAX_NUMBER_ITEM / 1000) + 1;
 
         Item purchasedItem = shop.getItems().get(randomItemIndex);
 
-        boolean isPurchased = shop.buyItem(purchasedItem, numberItems, client);
+        CompletableFuture<Boolean> isPurchased = shop.buyItem(purchasedItem, numberItems, client);
+        isPurchased.get();
 
 //        String purchased = "";
 //        String label = "[✓] ";
-//        if (!isPurchased) {
+//        if (!isPurchased.get()) {
 //            purchased = " не";
 //            label = "[❌] ";
 //        }

@@ -6,6 +6,7 @@ import ru.rsreu.shop.Shop;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -23,7 +24,7 @@ public class SynchronizedShop extends Shop {
     }
 
     @Override
-    public void addItem(Item item, Long number) {
+    public void addItem(Item item, long number) {
         items.add(item);
         availableItemsLock.lock();
         try {
@@ -34,8 +35,8 @@ public class SynchronizedShop extends Shop {
     }
 
     @Override
-    public boolean buyItem(Item item, Long numberItems, Client client) {
-
+    public CompletableFuture<Boolean> buyItem(Item item, long numberItems, Client client) {
+//
 //        if (!availableItems.containsKey(item)) {
 //            System.out.println("Товар " + item.getId() + " отсутствует");
 //        }
@@ -47,12 +48,14 @@ public class SynchronizedShop extends Shop {
 //            System.out.println("У клиента " + client.getId() + " недостаточно денег");
 //        }
 
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
 
-        if (!availableItems.containsKey(item) ||
+        if (item == null || client == null || !availableItems.containsKey(item) ||
                 availableItems.get(item) < numberItems ||
                 client.getMoney() < item.getPrice() * numberItems ||
                 numberItems < 1) {
-            return false;
+            result.complete(false);
+            return result;
         }
 
         availableItemsLock.lock();
@@ -87,12 +90,15 @@ public class SynchronizedShop extends Shop {
                 }
                 this.money += item.getPrice() * numberItems;
                 client.spendMoney(item.getPrice() * numberItems);
+                result.complete(true);
             } finally {
                 purchasedItemsStorageLock.unlock();
             }
+        } else {
+            result.complete(false);
         }
 
-        return isAvailableItem;
+        return result;
     }
 
     @Override
