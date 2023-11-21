@@ -1,15 +1,18 @@
 package ru.rsreu.shop;
 
-import com.lmax.disruptor.EventFactory;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import ru.rsreu.client.Client;
 
+import java.util.concurrent.CompletableFuture;
+
+@AllArgsConstructor
 @Getter
 @Setter
 public class Order {
-
     private Client client;
-    private Long numberItems;
     private Item item;
+    private long numberItems;
+    private CompletableFuture<Boolean> result;
 }

@@ -9,5 +9,5 @@ public interface TestSettings {
     int MIN_ITEM_PRICE = 1;
     int MAX_ITEM_PRICE = 100;
     int MAX_CLIENT_MONEY = 1000000;
-    int NUMBER_CLIENT_OPERATIONS = 10000;
+    int NUMBER_CLIENT_OPERATIONS = 700_000;
 }

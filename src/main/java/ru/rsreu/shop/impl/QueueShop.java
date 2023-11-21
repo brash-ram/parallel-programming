@@ -2,56 +2,47 @@ package ru.rsreu.shop.impl;
 
 import ru.rsreu.client.Client;
 import ru.rsreu.shop.Item;
+import ru.rsreu.shop.Order;
 import ru.rsreu.shop.Shop;
-import ru.rsreu.utils.TestSettings;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-public class QueueShop extends Shop {
-
-    private static final int SIZE_SHOP_QUEUE = 10000;
-    private final Lock availableItemsLock = new ReentrantLock();
-    private final Lock purchasedItemsStorageLock = new ReentrantLock();
-
+public class QueueShop extends Shop implements AutoCloseable {
     private final Map<Item, Long> availableItems = new HashMap<>();
     private final Map<Client, Map<Item, Long>> purchasedItemsStorage = new HashMap<>();
 
-    private final int NUMBER_THREADS = 3;
-    private final BlockingQueue<Map<Client, Map<Item, Long>>> orderQueue =
-            new LinkedBlockingQueue<>();
+    private final BlockingQueue<Order> orderQueue = new ArrayBlockingQueue<>(10000);
+
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
 
     public QueueShop(long money) {
         super(money);
-        ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
-        for (int i = 0; i < NUMBER_THREADS; i++) {
-            executorService.execute(this::ordersProcessing);
-        }
+        executorService.execute(this::ordersProcessing);
     }
 
     @Override
-    public void addItem(Item item, Long number) {
+    public void addItem(Item item, long number) {
         items.add(item);
         availableItems.put(item, number);
     }
 
     @Override
-    public boolean buyItem(Item item, Long numberItems, Client client) {
-        if (!availableItems.containsKey(item) ||
-                availableItems.get(item) < numberItems ||
-                client.getMoney() < item.getPrice() * numberItems ||
-                numberItems < 1) {
-            return false;
+    public CompletableFuture<Boolean> buyItem(Item item, long numberItems, Client client) {
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        if (item == null || client == null || client.getMoney() < item.getPrice() * numberItems || numberItems < 1) {
+            result.complete(false);
+            return result;
         }
-        Map<Client, Map<Item, Long>> order = new HashMap<>();
-        Map<Item, Long> orderItem = new HashMap<>();
-        orderItem.put(item, numberItems);
-        order.put(client, orderItem);
-        return orderQueue.offer(order);
+
+        Order order = new Order(client, item, numberItems, result);
+        boolean pushedQueue = orderQueue.offer(order);
+        if (!pushedQueue) {
+            result.complete(false);
+        }
+        return result;
     }
 
     @Override
@@ -70,12 +61,21 @@ public class QueueShop extends Shop {
 
     @Override
     public Map<Client, Map<Item, Long>> getPurchasedItems() {
+        synchronized (orderQueue) {
+            while (orderQueue.size() > 0) {
+                try {
+                    orderQueue.wait();
+                } catch (InterruptedException ignored) {
+                    return null;
+                }
+            }
+        }
         return purchasedItemsStorage;
     }
 
     private void ordersProcessing() {
         while (true) {
-            Map<Client, Map<Item, Long>> order = null;
+            Order order = null;
             try {
                 order = orderQueue.take();
             } catch (InterruptedException e) {
@@ -88,59 +88,56 @@ public class QueueShop extends Shop {
 
             if (order == null) continue;
 
-            for (Map.Entry<Client, Map<Item, Long>> entry : order.entrySet()) {
-                for (Map.Entry<Item, Long> itemEntry : entry.getValue().entrySet()) {
-                    Client client = entry.getKey();
-                    Item item = itemEntry.getKey();
-                    Long numberItems = itemEntry.getValue();
-                    parseOrder(item, numberItems, client);
-                }
-            }
+            if (order.getResult().isDone()) continue;
+
+            parseOrder(order.getItem(), order.getNumberItems(), order.getClient(), order.getResult());
+
             if (orderQueue.size() == 0) {
                 synchronized (orderQueue) {
-                    orderQueue.notify();
+                    orderQueue.notifyAll();
                 }
             }
 
         }
     }
 
-    private void parseOrder(Item item, Long numberItems, Client client) {
-        availableItemsLock.lock();
+    private void parseOrder(Item item, long numberItems, Client client, CompletableFuture<Boolean> result) {
+        if (!availableItems.containsKey(item) ||
+                availableItems.get(item) < numberItems) {
+            return;
+        }
+
         boolean isAvailableItem = false;
-        try {
-            if (availableItems.containsKey(item) && availableItems.get(item) >= numberItems) {
-                if (availableItems.get(item) > numberItems) {
-                    availableItems.put(item, availableItems.get(item) - numberItems);
-                } else {
-                    availableItems.remove(item);
-                }
-                isAvailableItem = true;
+        if (availableItems.containsKey(item) && availableItems.get(item) >= numberItems) {
+            if (availableItems.get(item) > numberItems) {
+                availableItems.put(item, availableItems.get(item) - numberItems);
+            } else {
+                availableItems.remove(item);
             }
-        } finally {
-            availableItemsLock.unlock();
+            isAvailableItem = true;
         }
 
         if (isAvailableItem) {
-            purchasedItemsStorageLock.lock();
-            try {
-                if (purchasedItemsStorage.containsKey(client)) {
-                    Map<Item, Long> purchasedItems = purchasedItemsStorage.get(client);
-                    if (purchasedItems.containsKey(item)) {
-                        purchasedItems.put(item, purchasedItems.get(item) + numberItems);
-                    } else {
-                        purchasedItems.put(item, numberItems);
-                    }
+            if (purchasedItemsStorage.containsKey(client)) {
+                Map<Item, Long> purchasedItems = purchasedItemsStorage.get(client);
+                if (purchasedItems.containsKey(item)) {
+                    purchasedItems.put(item, purchasedItems.get(item) + numberItems);
                 } else {
-                    Map<Item, Long> purchasedItems = new HashMap<>();
                     purchasedItems.put(item, numberItems);
-                    purchasedItemsStorage.put(client, purchasedItems);
                 }
-                this.money += item.getPrice() * numberItems;
-                client.spendMoney(item.getPrice() * numberItems);
-            } finally {
-                purchasedItemsStorageLock.unlock();
+            } else {
+                Map<Item, Long> purchasedItems = new HashMap<>();
+                purchasedItems.put(item, numberItems);
+                purchasedItemsStorage.put(client, purchasedItems);
             }
+            this.money += item.getPrice() * numberItems;
+            client.spendMoney(item.getPrice() * numberItems);
+            result.complete(true);
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        executorService.shutdownNow();
     }
 }

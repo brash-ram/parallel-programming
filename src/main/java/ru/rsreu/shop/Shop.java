@@ -5,6 +5,7 @@ import ru.rsreu.client.Client;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public abstract class Shop {
 
@@ -24,9 +25,9 @@ public abstract class Shop {
         return items;
     }
 
-    public abstract void addItem(Item item, Long number);
+    public abstract void addItem(Item item, long number);
 
-    public abstract boolean buyItem(Item item, Long numberItems, Client client);
+    public abstract CompletableFuture<Boolean> buyItem(Item item, long numberItems, Client client);
 
 
     public abstract Map<Item, Long> getAvailableItems();

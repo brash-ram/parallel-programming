@@ -13,16 +13,10 @@ public class TestQueueShopFactory implements ShopFactory {
     @Override
     public Shop getShop() {
         TestItemFactory itemFactory = TestItemFactory.INSTANCE;
-        int numberDifferentItems = random.nextInt(
-                MAX_NUMBER_DIFFERENT_ITEM_IN_SHOP - MIN_NUMBER_DIFFERENT_ITEM_IN_SHOP
-        ) + MIN_NUMBER_DIFFERENT_ITEM_IN_SHOP;
 
         Shop shop = new QueueShop(SHOP_MONEY);
-        for (int i = 0; i < numberDifferentItems; i++) {
-            long numberItem = random.nextInt(
-                    MAX_NUMBER_ITEM - MIN_NUMBER_ITEM
-            ) + MIN_NUMBER_ITEM;
-            shop.addItem(itemFactory.getItem(), numberItem);
+        for (int i = 0; i < MAX_NUMBER_DIFFERENT_ITEM_IN_SHOP; i++) {
+            shop.addItem(itemFactory.getItem(), (long)MAX_NUMBER_ITEM);
         }
         return shop;
     }
