@@ -1,8 +1,7 @@
 package ru.rsreu.factory;
 
-import ru.rsreu.shop.Shop;
-import ru.rsreu.shop.impl.QueueShop;
-import ru.rsreu.shop.impl.SynchronizedShop;
+import ru.rsreu.shop.ItemShop;
+import ru.rsreu.shop.impl.SynchronizedItemShop;
 
 import java.util.Random;
 
@@ -13,13 +12,13 @@ public class TestSynchronizedShopFactory implements ShopFactory {
     private Random random = new Random();
 
     @Override
-    public Shop getShop() {
+    public ItemShop getShop() {
         TestItemFactory itemFactory = TestItemFactory.INSTANCE;
 
-        Shop shop = new SynchronizedShop(SHOP_MONEY);
+        ItemShop itemShop = new SynchronizedItemShop(SHOP_MONEY);
         for (int i = 0; i < MAX_NUMBER_DIFFERENT_ITEM_IN_SHOP; i++) {
-            shop.addItem(itemFactory.getItem(), (long)MAX_NUMBER_ITEM);
+            itemShop.addItem(itemFactory.getItem(), (long)MAX_NUMBER_ITEM);
         }
-        return shop;
+        return itemShop;
     }
 }

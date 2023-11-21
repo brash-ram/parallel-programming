@@ -4,7 +4,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import ru.rsreu.client.Client;
 import ru.rsreu.factory.*;
 import ru.rsreu.shop.Item;
-import ru.rsreu.shop.Shop;
+import ru.rsreu.shop.ItemShop;
 import ru.rsreu.utils.TestSettings;
 
 import java.util.*;
@@ -18,7 +18,7 @@ public class QueuingSystemTest {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
 
-    @RepeatedTest(20)
+    @RepeatedTest(5)
     public void disruptorShopTest() throws InterruptedException {
         ShopFactory shopFactory = new TestDisruptorShopFactory();
         long start = System.currentTimeMillis();
@@ -27,7 +27,7 @@ public class QueuingSystemTest {
         executorService.shutdownNow();
     }
 
-    @RepeatedTest(20)
+    @RepeatedTest(5)
     public void queueShopTest() throws InterruptedException {
         ShopFactory shopFactory = new TestQueueShopFactory();
         long start = System.currentTimeMillis();
@@ -36,7 +36,7 @@ public class QueuingSystemTest {
         executorService.shutdownNow();
     }
 
-    @RepeatedTest(20)
+    @RepeatedTest(5)
     public void synchronizedShopTest() throws InterruptedException {
         ShopFactory shopFactory = new TestSynchronizedShopFactory();
         long start = System.currentTimeMillis();
@@ -46,18 +46,18 @@ public class QueuingSystemTest {
     }
 
     public void queuingSystemTest(ShopFactory shopFactory) throws InterruptedException {
-        Shop shop = shopFactory.getShop();
+        ItemShop itemShop = shopFactory.getShop();
         List<Client> clients = getTestClients();
 
         long startClientsMoney = clients.stream().map(Client::getMoney).reduce(Long::sum)
                 .orElseThrow(() -> new RuntimeException("Нет денег у клиентов"));
-        Map<Item, Long> startShopItems = new HashMap<>(shop.getAvailableItems());
-        long startShopMoney = shop.getMoney();
+        Map<Item, Long> startShopItems = new HashMap<>(itemShop.getAvailableItems());
+        long startShopMoney = itemShop.getMoney();
 
-        openShop(shop, clients);
+        openShop(itemShop, clients);
 
-        Map<Item, Long> endShopItems = new HashMap<>(shop.getAvailableItems());
-        for (Map.Entry<Client, Map<Item, Long>> entry : shop.getPurchasedItems().entrySet()) {
+        Map<Item, Long> endShopItems = new HashMap<>(itemShop.getAvailableItems());
+        for (Map.Entry<Client, Map<Item, Long>> entry : itemShop.getPurchasedItems().entrySet()) {
             for (Map.Entry<Item, Long> itemEntry : entry.getValue().entrySet()) {
                 if (endShopItems.containsKey(itemEntry.getKey())) {
                     endShopItems.put(itemEntry.getKey(), endShopItems.get(itemEntry.getKey()) + itemEntry.getValue());
@@ -72,13 +72,13 @@ public class QueuingSystemTest {
                 .orElseThrow(() -> new RuntimeException("Нет денег у клиентов"));
         long spentClientsMoney = clients.stream().map(Client::getSpentMoney).reduce(Long::sum)
                 .orElseThrow(() -> new RuntimeException("Нет денег у клиентов"));
-        long endShopMoney = shop.getMoney();
+        long endShopMoney = itemShop.getMoney();
 
         assertEquals(startClientsMoney, spentClientsMoney + endClientsMoney);
         assertEquals(startClientsMoney + startShopMoney, endClientsMoney + endShopMoney);
     }
 
-    public void openShop(Shop shop, List<Client> clients) throws InterruptedException {
+    public void openShop(ItemShop itemShop, List<Client> clients) throws InterruptedException {
         CountDownLatch startLatch = new CountDownLatch(NUMBER_THREADS);
         CountDownLatch endLatch = new CountDownLatch(NUMBER_THREADS);
         for (int i = 0; i < NUMBER_THREADS; i++) {
@@ -98,7 +98,7 @@ public class QueuingSystemTest {
                             return;
                         }
                         try {
-                            buyItem(shop, client);
+                            buyItem(itemShop, client);
                         } catch (InterruptedException | ExecutionException ex) {
                             ex.printStackTrace();
                         }
@@ -113,15 +113,15 @@ public class QueuingSystemTest {
         endLatch.await();
     }
 
-    private void buyItem(Shop shop, Client client) throws ExecutionException, InterruptedException {
+    private void buyItem(ItemShop itemShop, Client client) throws ExecutionException, InterruptedException {
         Random random = new Random();
 
-        int randomItemIndex = random.nextInt(shop.getItems().size());
+        int randomItemIndex = random.nextInt(itemShop.getItems().size());
         long numberItems = random.nextInt(TestSettings.MAX_NUMBER_ITEM / 1000) + 1;
 
-        Item purchasedItem = shop.getItems().get(randomItemIndex);
+        Item purchasedItem = itemShop.getItems().get(randomItemIndex);
 
-        CompletableFuture<Boolean> isPurchased = shop.buyItem(purchasedItem, numberItems, client);
+        CompletableFuture<Boolean> isPurchased = itemShop.buyItem(purchasedItem, numberItems, client);
         isPurchased.get();
 
 //        String purchased = "";

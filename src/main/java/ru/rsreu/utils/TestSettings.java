@@ -8,6 +8,6 @@ public interface TestSettings {
     int MAX_NUMBER_ITEM = 10000;
     int MIN_ITEM_PRICE = 1;
     int MAX_ITEM_PRICE = 100;
-    int MAX_CLIENT_MONEY = 1000000;
+    int MAX_CLIENT_MONEY = 10000000;
     int NUMBER_CLIENT_OPERATIONS = 700_000;
 }

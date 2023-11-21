@@ -2,7 +2,7 @@ package ru.rsreu.shop.impl;
 
 import ru.rsreu.client.Client;
 import ru.rsreu.shop.Item;
-import ru.rsreu.shop.Shop;
+import ru.rsreu.shop.ItemShop;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SynchronizedShop extends Shop {
+public class SynchronizedItemShop extends ItemShop {
 
     private final Lock availableItemsLock = new ReentrantLock();
     private final Lock purchasedItemsStorageLock = new ReentrantLock();
@@ -19,7 +19,7 @@ public class SynchronizedShop extends Shop {
     private final Map<Client, Map<Item, Long>> purchasedItemsStorage = new HashMap<>();
 
 
-    public SynchronizedShop(long money) {
+    public SynchronizedItemShop(long money) {
         super(money);
     }
 

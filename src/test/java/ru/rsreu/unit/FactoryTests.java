@@ -7,7 +7,7 @@ import ru.rsreu.factory.TestItemFactory;
 import ru.rsreu.factory.ShopFactory;
 import ru.rsreu.factory.TestSynchronizedShopFactory;
 import ru.rsreu.shop.Item;
-import ru.rsreu.shop.Shop;
+import ru.rsreu.shop.ItemShop;
 
 import java.util.Map;
 
@@ -45,12 +45,12 @@ public class FactoryTests {
     @Test
     public void shopFactoryTest() {
         ShopFactory shopFactory = new TestSynchronizedShopFactory();
-        Shop shop = shopFactory.getShop();
-        Map<Item, Long> mapItems = shop.getAvailableItems();
+        ItemShop itemShop = shopFactory.getShop();
+        Map<Item, Long> mapItems = itemShop.getAvailableItems();
 
         assertTrue(mapItems.keySet().size() > MIN_NUMBER_DIFFERENT_ITEM_IN_SHOP &&
                 mapItems.keySet().size() < MAX_NUMBER_DIFFERENT_ITEM_IN_SHOP);
-        Map<Client, Map<Item, Long>> purchasedItems = shop.getPurchasedItems();
+        Map<Client, Map<Item, Long>> purchasedItems = itemShop.getPurchasedItems();
         assertEquals(0, purchasedItems.keySet().size());
     }
 }

@@ -1,26 +1,53 @@
 package ru.rsreu.shop.impl;
 
+import com.lmax.disruptor.BlockingWaitStrategy;
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.TimeoutException;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
+import com.lmax.disruptor.util.DaemonThreadFactory;
 import ru.rsreu.client.Client;
 import ru.rsreu.shop.Item;
+import ru.rsreu.shop.ItemShop;
 import ru.rsreu.shop.Order;
-import ru.rsreu.shop.Shop;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 
-public class QueueShop extends Shop implements AutoCloseable {
-    private final Map<Item, Long> availableItems = new HashMap<>();
-    private final Map<Client, Map<Item, Long>> purchasedItemsStorage = new HashMap<>();
+public class DisruptorItemShop extends ItemShop implements AutoCloseable {
 
-    private final BlockingQueue<Order> orderQueue = new ArrayBlockingQueue<>(10000);
-
+    private static final int RING_BUFFER_SIZE = 2048;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
+    private final Map<Item, Long> availableItems = new HashMap<>();
+    private final Map<Client, Map<Item, Long>> purchasedItemsStorage = new HashMap<>();
+    private Disruptor<Order> disruptor;
+    private RingBuffer<Order> ringBuffer;
 
-    public QueueShop(long money) {
+    public DisruptorItemShop(Long money) {
         super(money);
-        executorService.execute(this::ordersProcessing);
+        CountDownLatch latch = new CountDownLatch(1);
+        executorService.execute(() -> {
+            disruptor = new Disruptor<>(
+                    Order::new,
+                    RING_BUFFER_SIZE,
+                    DaemonThreadFactory.INSTANCE,
+                    ProducerType.MULTI,
+                    new BlockingWaitStrategy()
+            );
+            disruptor.handleEventsWith((order, l, b) ->
+                    parseOrder(order)
+            );
+            ringBuffer = disruptor.start();
+            latch.countDown();
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -36,74 +63,40 @@ public class QueueShop extends Shop implements AutoCloseable {
             result.complete(false);
             return result;
         }
-
-        Order order = new Order(client, item, numberItems, result);
-        boolean pushedQueue = orderQueue.offer(order);
-        if (!pushedQueue) {
-            result.complete(false);
-        }
+        long sequenceId = ringBuffer.next();
+        Order valueEvent = ringBuffer.get(sequenceId);
+        valueEvent.setItem(item);
+        valueEvent.setNumberItems(numberItems);
+        valueEvent.setClient(client);
+        valueEvent.setResult(result);
+        ringBuffer.publish(sequenceId);
         return result;
     }
 
     @Override
     public Map<Item, Long> getAvailableItems() {
-        synchronized (orderQueue) {
-            while (orderQueue.size() > 0) {
-                try {
-                    orderQueue.wait();
-                } catch (InterruptedException ignored) {
-                    return null;
-                }
-            }
-        }
+//        try {
+//            disruptor.shutdown(10, TimeUnit.SECONDS);
+//        } catch (TimeoutException ex) {
+//            ex.printStackTrace();
+//            return null;
+//        }
         return availableItems;
     }
 
     @Override
     public Map<Client, Map<Item, Long>> getPurchasedItems() {
-        synchronized (orderQueue) {
-            while (orderQueue.size() > 0) {
-                try {
-                    orderQueue.wait();
-                } catch (InterruptedException ignored) {
-                    return null;
-                }
-            }
-        }
         return purchasedItemsStorage;
     }
 
-    private void ordersProcessing() {
-        while (true) {
-            Order order = null;
-            try {
-                order = orderQueue.take();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    private void parseOrder(Order order) {
+        Item item = order.getItem();
+        Client client = order.getClient();
+        long numberItems = order.getNumberItems();
+        CompletableFuture<Boolean> result = order.getResult();
 
-            if (Thread.currentThread().isInterrupted()) {
-                return;
-            }
-
-            if (order == null) continue;
-
-            if (order.getResult().isDone()) continue;
-
-            parseOrder(order.getItem(), order.getNumberItems(), order.getClient(), order.getResult());
-
-            if (orderQueue.size() == 0) {
-                synchronized (orderQueue) {
-                    orderQueue.notifyAll();
-                }
-            }
-
-        }
-    }
-
-    private void parseOrder(Item item, long numberItems, Client client, CompletableFuture<Boolean> result) {
-        if (!availableItems.containsKey(item) ||
-                availableItems.get(item) < numberItems) {
+        if (!availableItems.containsKey(item) || availableItems.get(item) < numberItems) {
+            result.complete(false);
             return;
         }
 
@@ -133,6 +126,8 @@ public class QueueShop extends Shop implements AutoCloseable {
             this.money += item.getPrice() * numberItems;
             client.spendMoney(item.getPrice() * numberItems);
             result.complete(true);
+        } else {
+            result.complete(false);
         }
     }
 

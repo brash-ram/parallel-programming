@@ -1,7 +1,7 @@
 package ru.rsreu.factory;
 
-import ru.rsreu.shop.Shop;
+import ru.rsreu.shop.ItemShop;
 
 public interface ShopFactory {
-    Shop getShop();
+    ItemShop getShop();
 }
